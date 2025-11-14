@@ -1,0 +1,6 @@
+@AudioViz_HostAddress = http://localhost:5039
+
+GET {{AudioViz_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
