@@ -28,6 +28,19 @@ jobs:
           with tarfile.open(fileobj=io.BytesIO(data)) as t:
             t.extractall('/tmp/lumenlink-build',filter='data')
           PY
+      - name: Apply pairing fix
+        run: |
+          python3 -m pip install --quiet brotli
+          python3 - <<'PY'
+          import pathlib,base64,brotli,hashlib
+          p=pathlib.Path('/tmp/lumenlink-build/lib/ui/setup.dart')
+          blob=base64.b64decode(pathlib.Path('lumenlink_patch/setup.dart.br.b64').read_text())
+          data=brotli.decompress(blob)
+          assert hashlib.sha256(data).hexdigest() == '1459b759a581420820ad9425c61f6c16d380f6f06bc0e7c3ad0592ec32b054a4', 'Patch checksum mismatch'
+          p.write_bytes(data)
+          print('Applied improved device discovery and provisioning diagnostics')
+          PY
+          sed -i 's/version: 0.1.0+1/version: 0.1.1+2/' /tmp/lumenlink-build/pubspec.yaml
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
