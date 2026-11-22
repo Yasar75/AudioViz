@@ -3,29 +3,32 @@ on:
   push:
     branches:
       - lumenlink-apk-build-20261122
-    paths:
-      - lumenlink_android_only.b64
-      - .github/workflows/lumenlink-apk.yml
   workflow_dispatch:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - name: Extract Flutter project
+      - name: Restore original LumenLink Flutter sources
         run: |
           mkdir -p /tmp/lumenlink-build
           python3 - <<'PY'
-          import base64,lzma,tarfile,io,pathlib
-          b=lzma.decompress(base64.b64decode(pathlib.Path('lumenlink_android_only.b64').read_text()))
-          with tarfile.open(fileobj=io.BytesIO(b)) as z:z.extractall('/tmp/lumenlink-build',filter='data')
+          import base64, lzma, tarfile, io, pathlib, hashlib
+          parts = pathlib.Path("lumenlink_parts")
+          s = ''.join((parts / f'{i:02d}').read_text() for i in range(5))
+          digest = hashlib.sha256(s.encode()).hexdigest()
+          print('Build source SHA256:', digest)
+          assert digest == '65f0e15a36f4e9e556deedd32f5a21c67211182e9a5e4f219e4207d4b8b987c9', 'source checksum mismatch'
+          data = lzma.decompress(base64.b64decode(s))
+          with tarfile.open(fileobj=io.BytesIO(data)) as t:
+            t.extractall('/tmp/lumenlink-build',filter='data')
           PY
-      - name: Generate Android project
+      - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
           flutter create --empty --platforms=android --project-name lumenlink --org dev.lumenlink .
@@ -35,17 +38,18 @@ jobs:
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 36/' android/app/build.gradle.kts
-      - name: Install packages and analyze
+      - name: Fetch dependencies
         working-directory: /tmp/lumenlink-build
-        run: |
-          flutter pub get
-          flutter analyze --no-fatal-infos
-      - name: Build APK
+        run: flutter pub get
+      - name: Analyze
+        working-directory: /tmp/lumenlink-build
+        run: flutter analyze --no-fatal-infos
+      - name: Build installable debug APK
         working-directory: /tmp/lumenlink-build
         run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: LumenLink-debug-apk
+          name: LumenLink-Android-APK
           path: /tmp/lumenlink-build/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: warn
