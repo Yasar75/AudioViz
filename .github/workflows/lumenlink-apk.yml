@@ -36,8 +36,10 @@ jobs:
           mkdir -p android/app/src/main/kotlin/dev/lumenlink/lumenlink
           cp android_template/kotlin/dev/lumenlink/lumenlink/MainActivity.kt android/app/src/main/kotlin/dev/lumenlink/lumenlink/MainActivity.kt
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
-          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 37/' android/app/build.gradle.kts
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 36/' android/app/build.gradle.kts
+      - name: Install Android API 37
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37' || true
       - name: Fetch dependencies
         working-directory: /tmp/lumenlink-build
         run: flutter pub get
