@@ -89,7 +89,14 @@ jobs:
         working-directory: /tmp/lumenlink-build
         run: flutter pub get
       - name: Remove obsolete header variable
-        run: sed -i '/    final skin = skins\\[s.skinIndex\\];/d' /tmp/lumenlink-build/lib/ui/home.dart
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/lumenlink-build/lib/ui/home.dart')
+          s=p.read_text()
+          assert '    final skin = skins[s.skinIndex];' in s
+          p.write_text(s.replace('    final skin = skins[s.skinIndex];', ''))
+          PY
       - name: Analyze
         working-directory: /tmp/lumenlink-build
         run: flutter analyze --no-fatal-infos
