@@ -58,6 +58,25 @@ jobs:
           if grep -RniE '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib; then
             echo 'ERROR: personal controller details must not be included'; exit 1
           fi
+      - name: Apply LumenLink v0.2.1 UI and launcher icon
+        run: |
+          mkdir -p /tmp/lumenlink-v021
+          python3 - <<'PY'
+          import pathlib,base64,lzma,tarfile,io,hashlib
+          root=pathlib.Path('lumenlink_v021')
+          b64=''.join((root/f'{i:02d}').read_text() for i in range(2))
+          digest=hashlib.sha256(b64.encode()).hexdigest()
+          print('v0.2.1 patch checksum:',digest)
+          assert digest == 'ddcda612a32126734b1838f366df1d923a3b6053ef56f92779dbec643cccb0e0', 'patch checksum mismatch'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tar:
+            tar.extractall('/tmp/lumenlink-v021',filter='data')
+          PY
+          patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v021/v021.patch
+          cp /tmp/lumenlink-v021/lumenlink_icon.webp /tmp/lumenlink-build/assets/lumenlink_icon.webp
+          grep -q 'version: 0.2.1+5' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'Choose a controller' /tmp/lumenlink-build/lib/ui/home.dart
+          grep -q '“by Yash”' /tmp/lumenlink-build/lib/ui/brand.dart
+          ! grep -R -E '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
