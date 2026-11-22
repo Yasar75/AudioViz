@@ -51,6 +51,7 @@ jobs:
           with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tf:
             tf.extractall('/tmp/lumenlink-build',filter='data')
           PY
+          sed -i 's/version: 0.1.1+2/version: 0.1.0+1/' /tmp/lumenlink-build/pubspec.yaml
           patch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-build/update.patch
           grep -q 'version: 0.2.0+4' /tmp/lumenlink-build/pubspec.yaml
           grep -q 'LumenBrand' /tmp/lumenlink-build/lib/ui/home.dart
