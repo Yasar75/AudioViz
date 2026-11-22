@@ -41,45 +41,22 @@ jobs:
           print('Applied improved device discovery and provisioning diagnostics')
           PY
           sed -i 's/version: 0.1.0+1/version: 0.1.1+2/' /tmp/lumenlink-build/pubspec.yaml
-      - name: WLED-first pairing and Android 17 local-network access
+      - name: Apply universal branding and legal documents
         run: |
           python3 - <<'PY'
-          from pathlib import Path
-          p = Path('/tmp/lumenlink-build/lib/ui/setup.dart')
-          s = p.read_text()
-          assert 'Try common WLED / LumenLink addresses' in s
-          s = s.replace("final _host = TextEditingController();", "final _host = TextEditingController(text: '192.168.0.9');")
-          s = s.replace("final _name = TextEditingController(text: 'My LED Strip');", "final _name = TextEditingController(text: 'RoomPixel');")
-          s = s.replace("setState(() { loading = true; message = null; });", "setState(() { loading = true; message = null; configured = false; });")
-          s = s.replace("appBar: AppBar(title: const Text('Set up your lights'),", "appBar: AppBar(title: const Text('WLED Setup  ·  v0.1.2'),")
-          s = s.replace("const _SectionLabel('Connect to an existing WLED or LumenLink controller'),", "const _SectionLabel('Connect existing WLED over Wi-Fi'),")
-          s = s.replace("label: const Text('Connect & add device')", "label: const Text('Connect RoomPixel WLED')")
-          s = s.replace("const Text('First-time ESP32 setup', style: TextStyle(fontWeight: FontWeight.bold)),", "const Text('Custom LumenLink firmware only (not WLED)', style: TextStyle(fontWeight: FontWeight.bold)),")
-          s = s.replace("label: Text(showProvisioning ? 'Hide LumenLink provisioning' : 'Set up LumenLink Wi-Fi')", "label: Text(showProvisioning ? 'Hide custom firmware setup' : 'Set up custom LumenLink firmware only')")
-          s = s.replace("  Future<void> _probe() => _work(() async {", """  Future<void> _testWled() => _work(() async {
-            final address = _host.text.trim();
-            if (address.isEmpty) throw StateError('Enter the WLED IP or hostname first.');
-            final info = await widget.store.service.get(address, '/json/info');
-            final leds = info['leds'] is Map ? (info['leds'] as Map)['count'] : null;
-            if (mounted) setState(() {
-              configured = true;
-              message = 'WLED API connected: version ' + (info['ver'] ?? 'unknown').toString() +
-                ', LEDs: ' + (leds ?? '?').toString() + '. Tap Connect RoomPixel WLED.';
-            });
-          });
-          Future<void> _probe() => _work(() async {""")
-          s = s.replace("          const SizedBox(height: 10),\n          OutlinedButton.icon(onPressed: loading ? null : _findController,", """          const SizedBox(height: 10),
-          OutlinedButton.icon(onPressed: loading ? null : _testWled,
-            icon: const Icon(Icons.fact_check_outlined),
-            label: const Text('Test WLED JSON connection')),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(onPressed: loading ? null : _findController,""")
-          s = s.replace("return 'The ESP32 did not respond. Check that it is powered on, has WLED or LumenLink '", "return 'LumenLink cannot reach the controller over the local network. On Android 17, allow LumenLink Nearby devices / Local network in Android Settings > Apps > LumenLink > Permissions. Verify http://192.168.0.9/json/info in Chrome. Check that the ESP32 is powered on, has WLED or LumenLink '")
-          p.write_text(s)
-          pp=Path('/tmp/lumenlink-build/pubspec.yaml')
-          pp.write_text(pp.read_text().replace('version: 0.1.1+2', 'version: 0.1.2+3'))
-          print('WLED UI v0.1.2 applied with local-network runtime permission.')
+          import pathlib,hashlib,base64,lzma,tarfile,io
+          p=pathlib.Path('lumenlink_v020')
+          b64=''.join((p/f'{i:02d}').read_text() for i in range(4))
+          assert hashlib.sha256(b64.encode()).hexdigest() == '5bdf6da16049743877ca2bd02518e3f0ef6b7fe782a07449f797d257f62d2d52', 'overlay checksum mismatch'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tf:
+            tf.extractall('/tmp/lumenlink-build',filter='data')
           PY
+          patch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-build/update.patch
+          grep -q 'version: 0.2.0+4' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'LumenBrand' /tmp/lumenlink-build/lib/ui/home.dart
+          if grep -RniE '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib; then
+            echo 'ERROR: personal controller details must not be included'; exit 1
+          fi
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
@@ -90,6 +67,21 @@ jobs:
           sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
           sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 37/' android/app/build.gradle.kts
           sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 37/' android/app/build.gradle.kts
+      - name: Generate unique LumenLink launcher icons
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          root=Path('/tmp/lumenlink-build')
+          icon=Image.open(root/'assets/lumenlink_icon.webp').convert('RGBA')
+          base=root/'android/app/src/main/res'
+          for density,side in [('mdpi',48),('hdpi',72),('xhdpi',96),('xxhdpi',144),('xxxhdpi',192)]:
+            target=base/f'mipmap-{density}'
+            target.mkdir(exist_ok=True,parents=True)
+            icon.resize((side,side),Image.Resampling.LANCZOS).save(target/'ic_launcher.png',format='PNG')
+          print('Custom LumenLink Android launcher artwork installed')
+          PY
       - name: Install Android API 37
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" 'platforms;android-37' || true
       - name: Fetch dependencies
