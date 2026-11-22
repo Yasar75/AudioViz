@@ -88,6 +88,8 @@ jobs:
       - name: Fetch dependencies
         working-directory: /tmp/lumenlink-build
         run: flutter pub get
+      - name: Remove obsolete header variable
+        run: sed -i '/    final skin = skins\\[s.skinIndex\\];/d' /tmp/lumenlink-build/lib/ui/home.dart
       - name: Analyze
         working-directory: /tmp/lumenlink-build
         run: flutter analyze --no-fatal-infos
