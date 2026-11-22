@@ -1,0 +1,51 @@
+name: Build LumenLink Android APK
+on:
+  push:
+    branches:
+      - lumenlink-apk-build-20261122
+    paths:
+      - lumenlink_android_only.b64
+      - .github/workflows/lumenlink-apk.yml
+  workflow_dispatch:
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Extract Flutter project
+        run: |
+          mkdir -p /tmp/lumenlink-build
+          python3 - <<'PY'
+          import base64,lzma,tarfile,io,pathlib
+          b=lzma.decompress(base64.b64decode(pathlib.Path('lumenlink_android_only.b64').read_text()))
+          with tarfile.open(fileobj=io.BytesIO(b)) as z:z.extractall('/tmp/lumenlink-build',filter='data')
+          PY
+      - name: Generate Android project
+        working-directory: /tmp/lumenlink-build
+        run: |
+          flutter create --empty --platforms=android --project-name lumenlink --org dev.lumenlink .
+          cp android_template/AndroidManifest.xml android/app/src/main/AndroidManifest.xml
+          mkdir -p android/app/src/main/kotlin/dev/lumenlink/lumenlink
+          cp android_template/kotlin/dev/lumenlink/lumenlink/MainActivity.kt android/app/src/main/kotlin/dev/lumenlink/lumenlink/MainActivity.kt
+          sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 23/' android/app/build.gradle.kts
+          sed -i 's/compileSdk = flutter.compileSdkVersion/compileSdk = 36/' android/app/build.gradle.kts
+          sed -i 's/targetSdk = flutter.targetSdkVersion/targetSdk = 36/' android/app/build.gradle.kts
+      - name: Install packages and analyze
+        working-directory: /tmp/lumenlink-build
+        run: |
+          flutter pub get
+          flutter analyze --no-fatal-infos
+      - name: Build APK
+        working-directory: /tmp/lumenlink-build
+        run: flutter build apk --debug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LumenLink-debug-apk
+          path: /tmp/lumenlink-build/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: warn
