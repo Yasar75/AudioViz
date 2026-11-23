@@ -244,6 +244,8 @@ jobs:
             '  @override',
             '  bool welcomeComplete = false;',
             '  @override',
+            "  '  String cloudStatus = \'Cloud ready\';',"
+            '  @override',
             '  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);',
           ]
           src=src.replace('class _TestStore extends AppStore {', chr(10).join(mock_store))
