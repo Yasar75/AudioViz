@@ -159,6 +159,25 @@ jobs:
           grep -q 'version: 0.2.5+9' /tmp/lumenlink-build/pubspec.yaml
           grep -q 'flutter_secure_storage' /tmp/lumenlink-build/pubspec.yaml
           grep -q "Create account" /tmp/lumenlink-build/lib/ui/account.dart
+      - name: Integrate v0.2.6 Google Home device discovery and Wi-Fi phone bridge
+        run: |
+          mkdir -p /tmp/lumenlink-v026
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,lzma,tarfile,io,hashlib
+          b64=''.join((Path('lumenlink_v026')/f'{i:02d}').read_text() for i in range(3))
+          digest=hashlib.sha256(b64.encode()).hexdigest()
+          print('v0.2.6 patch checksum:',digest)
+          assert digest == 'a88a89722787ad3e9d66fccbdb3b300b1000988ad262c2c92dd10172cb3717b3'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tf:
+            tf.extractall('/tmp/lumenlink-v026',filter='data')
+          PY
+          patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v026/v026.patch
+          cp /tmp/lumenlink-v026/cloud_bridge.dart /tmp/lumenlink-build/lib/core/cloud_bridge.dart
+          cp /tmp/lumenlink-v026/cloud_bridge_test.dart /tmp/lumenlink-build/test/cloud_bridge_test.dart
+          grep -q 'version: 0.2.6+10' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'Sync my lights to Google Home' /tmp/lumenlink-build/lib/ui/account.dart
+          grep -q 'LumenCloudBridge' /tmp/lumenlink-build/lib/core/app_store.dart
       - name: Check live LumenLink account API
         run: |
           python3 - <<'PY'
