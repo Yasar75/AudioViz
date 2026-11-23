@@ -237,6 +237,13 @@ jobs:
               + "    expect(find.text('Google'), findsOneWidget);")
           src=src.replace("await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0);",
                           "await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0, scrollable: find.byType(Scrollable).first);")
+          test_header="testWidgets('Email sign in updates account state', (tester) async {"
+          assert test_header in src
+          src=src.replace(test_header, test_header + chr(10)
+              + "    tester.view.physicalSize = const Size(800, 1400);" + chr(10)
+              + "    tester.view.devicePixelRatio = 1;" + chr(10)
+              + "    addTearDown(tester.view.resetPhysicalSize);" + chr(10)
+              + "    addTearDown(tester.view.resetDevicePixelRatio);")
           p.write_text(src)
           service=Path('/tmp/lumenlink-build/lib/core/account_client.dart')
           text=service.read_text().replace('      return restore();', '      return await restore();')
