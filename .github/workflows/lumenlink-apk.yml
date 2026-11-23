@@ -94,6 +94,14 @@ jobs:
           mkdir -p /tmp/lumenlink-build/test
           cp /tmp/lumenlink-v023/account.dart /tmp/lumenlink-build/lib/ui/account.dart
           cp /tmp/lumenlink-v023/account_entry_test.dart /tmp/lumenlink-build/test/account_entry_test.dart
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/lumenlink-build/test/account_entry_test.dart')
+          s=p.read_text().replace("find.text('LumenLink account')", "find.text('Account & connected services')")
+          s=s.replace("expect(find.text(method), findsOneWidget);",
+            "await tester.scrollUntilVisible(find.text(method), 240.0);\\n    expect(find.text(method), findsOneWidget);".replace('\\n','\\n'))
+          p.write_text(s)
+          PY
           cp /tmp/lumenlink-v023/ACCOUNT_INTEGRATION.md /tmp/lumenlink-build/ACCOUNT_INTEGRATION.md
           sed -i "/^import 'dart:async';$/d" /tmp/lumenlink-build/lib/ui/account.dart
           grep -q 'version: 0.2.3+7' /tmp/lumenlink-build/pubspec.yaml
