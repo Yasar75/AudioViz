@@ -232,6 +232,12 @@ jobs:
                           "expect(find.text('Sign in'), findsWidgets);")
           src=src.replace("await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sign in'));",
                           "await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0);")
+          src=src.replace("expect(find.text('Google'), findsOneWidget);",
+                          "await tester.scrollUntilVisible(find.text('Google'), 210.0, scrollable: find.byType(Scrollable).first);\\n"
+                          "    expect(find.text('Google'), findsOneWidget);")
+          src=src.replace("await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0);",
+                          "await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0, scrollable: find.byType(Scrollable).first);")
+          src=src.replace('\\\\n', chr(10))
           p.write_text(src)
           service=Path('/tmp/lumenlink-build/lib/core/account_client.dart')
           text=service.read_text().replace('      return restore();', '      return await restore();')
