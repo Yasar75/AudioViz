@@ -91,6 +91,7 @@ jobs:
             archive.extractall('/tmp/lumenlink-v023',filter='data')
           PY
           patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v023/v023.patch
+          mkdir -p /tmp/lumenlink-build/test
           cp /tmp/lumenlink-v023/account.dart /tmp/lumenlink-build/lib/ui/account.dart
           cp /tmp/lumenlink-v023/account_entry_test.dart /tmp/lumenlink-build/test/account_entry_test.dart
           cp /tmp/lumenlink-v023/ACCOUNT_INTEGRATION.md /tmp/lumenlink-build/ACCOUNT_INTEGRATION.md
