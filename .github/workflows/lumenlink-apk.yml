@@ -77,6 +77,28 @@ jobs:
           grep -q 'Choose a controller' /tmp/lumenlink-build/lib/ui/home.dart
           grep -q '“by Yash”' /tmp/lumenlink-build/lib/ui/brand.dart
           ! grep -R -E '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib
+      - name: Apply LumenLink v0.2.3 optional account integration
+        run: |
+          mkdir -p /tmp/lumenlink-v023
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,lzma,tarfile,io,hashlib
+          b64=''.join((Path('lumenlink_v023')/f'{i:02d}').read_text() for i in range(2))
+          digest=hashlib.sha256(b64.encode()).hexdigest()
+          print('Account UI bundle SHA256:',digest)
+          assert digest=='64a3c28e87966127c3787fb8369908e5893776d28b3b6b9f999225405ddfb081', 'Incorrect account overlay checksum'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as archive:
+            archive.extractall('/tmp/lumenlink-v023',filter='data')
+          PY
+          patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v023/v023.patch
+          cp /tmp/lumenlink-v023/account.dart /tmp/lumenlink-build/lib/ui/account.dart
+          cp /tmp/lumenlink-v023/account_entry_test.dart /tmp/lumenlink-build/test/account_entry_test.dart
+          cp /tmp/lumenlink-v023/ACCOUNT_INTEGRATION.md /tmp/lumenlink-build/ACCOUNT_INTEGRATION.md
+          sed -i "/^import 'dart:async';$/d" /tmp/lumenlink-build/lib/ui/account.dart
+          grep -q 'version: 0.2.3+7' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'Continue using local lights without an account' /tmp/lumenlink-build/lib/ui/account.dart
+          grep -q 'Choose a controller' /tmp/lumenlink-build/lib/ui/home.dart
+          ! grep -R -E '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
@@ -119,6 +141,9 @@ jobs:
       - name: Analyze
         working-directory: /tmp/lumenlink-build
         run: flutter analyze --no-fatal-infos
+      - name: Run Flutter widget and model tests
+        working-directory: /tmp/lumenlink-build
+        run: flutter test
       - name: Build installable debug APK
         working-directory: /tmp/lumenlink-build
         run: flutter build apk --debug
