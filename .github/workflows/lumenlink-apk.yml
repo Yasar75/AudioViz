@@ -108,6 +108,27 @@ jobs:
           grep -q 'Continue using local lights without an account' /tmp/lumenlink-build/lib/ui/account.dart
           grep -q 'Choose a controller' /tmp/lumenlink-build/lib/ui/home.dart
           ! grep -R -E '192\\.168\\.0\\.9|RoomPixel' /tmp/lumenlink-build/lib
+      - name: Apply v0.2.4 account-first onboarding, guest access and settings fixes
+        run: |
+          mkdir -p /tmp/lumenlink-v024
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64,lzma,tarfile,io,hashlib
+          b64=''.join((Path('lumenlink_v024')/f'{i:02d}').read_text() for i in range(2))
+          digest=hashlib.sha256(b64.encode()).hexdigest()
+          print('v0.2.4 bundle SHA256:',digest)
+          assert digest == '427761daeb31170361f04df435e24cad1583c0c47590f52e8bdfc7a2a3f4261e'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tf:
+            tf.extractall('/tmp/lumenlink-v024',filter='data')
+          PY
+          cp /tmp/lumenlink-v023/account_entry_test.dart /tmp/lumenlink-build/test/account_entry_test.dart
+          patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v024/update.patch
+          cp /tmp/lumenlink-v024/welcome.dart /tmp/lumenlink-build/lib/ui/welcome.dart
+          cp /tmp/lumenlink-v024/welcome_flow_test.dart /tmp/lumenlink-build/test/welcome_flow_test.dart
+          grep -q 'version: 0.2.4+8' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'WelcomeScreen(store: store)' /tmp/lumenlink-build/lib/main.dart
+          grep -q 'Guest · Local controls only' /tmp/lumenlink-build/lib/ui/home.dart
+          grep -q 'Continue as guest' /tmp/lumenlink-build/lib/ui/welcome.dart
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
