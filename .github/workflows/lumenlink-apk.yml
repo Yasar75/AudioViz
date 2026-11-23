@@ -132,6 +132,7 @@ jobs:
           old="await tester.ensureVisible(find.text('Continue as guest'));"
           assert old in s
           s=s.replace(old,"await tester.scrollUntilVisible(find.text('Continue as guest'), 250.0);")
+          s=s.replace("find.text('Cloud features require a LumenLink account:')", "find.text('These cloud features require a LumenLink account:')")
           p.write_text(s)
           PY
           grep -q 'version: 0.2.4+8' /tmp/lumenlink-build/pubspec.yaml
