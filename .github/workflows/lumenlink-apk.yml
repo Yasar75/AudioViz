@@ -125,6 +125,15 @@ jobs:
           patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v024/update.patch
           cp /tmp/lumenlink-v024/welcome.dart /tmp/lumenlink-build/lib/ui/welcome.dart
           cp /tmp/lumenlink-v024/welcome_flow_test.dart /tmp/lumenlink-build/test/welcome_flow_test.dart
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/lumenlink-build/test/welcome_flow_test.dart')
+          s=p.read_text()
+          old="await tester.ensureVisible(find.text('Continue as guest'));"
+          assert old in s
+          s=s.replace(old,"await tester.scrollUntilVisible(find.text('Continue as guest'), 250.0);")
+          p.write_text(s)
+          PY
           grep -q 'version: 0.2.4+8' /tmp/lumenlink-build/pubspec.yaml
           grep -q 'WelcomeScreen(store: store)' /tmp/lumenlink-build/lib/main.dart
           grep -q 'Guest · Local controls only' /tmp/lumenlink-build/lib/ui/home.dart
