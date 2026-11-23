@@ -139,6 +139,36 @@ jobs:
           grep -q 'WelcomeScreen(store: store)' /tmp/lumenlink-build/lib/main.dart
           grep -q 'Guest · Local controls only' /tmp/lumenlink-build/lib/ui/home.dart
           grep -q 'Continue as guest' /tmp/lumenlink-build/lib/ui/welcome.dart
+      - name: Integrate v0.2.5 native email accounts and encrypted sessions
+        run: |
+          mkdir -p /tmp/lumenlink-v025
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64, lzma, tarfile, io, hashlib
+          b64=''.join((Path('lumenlink_v025')/f'{i:02d}').read_text() for i in range(3))
+          digest=hashlib.sha256(b64.encode()).hexdigest()
+          print('v0.2.5 source bundle SHA256:',digest)
+          assert digest == '67a6017e1cf066f3260e10d63980e41bb274e7a666dd1c98b214f7291ced94bc'
+          with tarfile.open(fileobj=io.BytesIO(lzma.decompress(base64.b64decode(b64)))) as tf:
+            tf.extractall('/tmp/lumenlink-v025',filter='data')
+          PY
+          patch --batch -p1 -d /tmp/lumenlink-build -i /tmp/lumenlink-v025/v025.patch
+          cp /tmp/lumenlink-v025/account_client.dart /tmp/lumenlink-build/lib/core/account_client.dart
+          cp /tmp/lumenlink-v025/account.dart /tmp/lumenlink-build/lib/ui/account.dart
+          cp /tmp/lumenlink-v025/account_entry_test.dart /tmp/lumenlink-build/test/account_entry_test.dart
+          grep -q 'version: 0.2.5+9' /tmp/lumenlink-build/pubspec.yaml
+          grep -q 'flutter_secure_storage' /tmp/lumenlink-build/pubspec.yaml
+          grep -q "Create account" /tmp/lumenlink-build/lib/ui/account.dart
+      - name: Check live LumenLink account API
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request
+          url='https://lumenlink-google-home-backend-aemc.vercel.app/v1/auth/capabilities'
+          with urllib.request.urlopen(url,timeout=30) as resp:
+            result=json.load(resp)
+            assert resp.status==200 and result.get('email_login') is True and result.get('email_signup') is True, result
+            print('Live email login/signup is enabled on LumenLink backend.')
+          PY
       - name: Generate Android platform
         working-directory: /tmp/lumenlink-build
         run: |
