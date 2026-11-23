@@ -99,7 +99,7 @@ jobs:
           p=Path('/tmp/lumenlink-build/test/account_entry_test.dart')
           s=p.read_text().replace("find.text('LumenLink account')", "find.text('Account & connected services')")
           s=s.replace("expect(find.text(method), findsOneWidget);",
-            "await tester.scrollUntilVisible(find.text(method), 240.0);\\n    expect(find.text(method), findsOneWidget);".replace('\\n','\\n'))
+            "await tester.scrollUntilVisible(find.text(method), 240.0);\n    expect(find.text(method), findsOneWidget);")
           p.write_text(s)
           PY
           cp /tmp/lumenlink-v023/ACCOUNT_INTEGRATION.md /tmp/lumenlink-build/ACCOUNT_INTEGRATION.md
