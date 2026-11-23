@@ -244,7 +244,7 @@ jobs:
             '  @override',
             '  bool welcomeComplete = false;',
             '  @override',
-            "  '  String cloudStatus = \'Cloud ready\';',"
+            "  String cloudStatus = 'Cloud ready';",
             '  @override',
             '  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);',
           ]
