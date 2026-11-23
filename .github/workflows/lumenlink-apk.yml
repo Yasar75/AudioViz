@@ -244,6 +244,9 @@ jobs:
               + "    tester.view.devicePixelRatio = 1;" + chr(10)
               + "    addTearDown(tester.view.resetPhysicalSize);" + chr(10)
               + "    addTearDown(tester.view.resetDevicePixelRatio);")
+          # Invoke the form's callback directly in headless tests; its scroll location varies by viewport.
+          src=src.replace("await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));",
+              "tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Sign in')).onPressed!();")
           p.write_text(src)
           service=Path('/tmp/lumenlink-build/lib/core/account_client.dart')
           text=service.read_text().replace('      return restore();', '      return await restore();')
