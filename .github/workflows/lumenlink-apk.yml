@@ -216,18 +216,22 @@ jobs:
           src=p.read_text()
           assert 'await tester.testTextInput.hide();' in src
           src=src.replace('await tester.testTextInput.hide();', 'tester.testTextInput.hide();')
-          src=src.replace('class _TestStore extends AppStore {',
-             'class _TestStore extends ChangeNotifier implements AppStore {\\n'
-             '  @override\\n  LumenAccount? account;\\n'
-             '  @override\\n  bool guestMode = true;\\n'
-             '  @override\\n  bool welcomeComplete = false;\\n'
-             '  @override\\n  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);')
+          mock_store = [
+            'class _TestStore extends ChangeNotifier implements AppStore {',
+            '  @override',
+            '  LumenAccount? account;',
+            '  @override',
+            '  bool guestMode = true;',
+            '  @override',
+            '  bool welcomeComplete = false;',
+            '  @override',
+            '  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);',
+          ]
+          src=src.replace('class _TestStore extends AppStore {', chr(10).join(mock_store))
           src=src.replace("expect(find.text('Sign in'), findsOneWidget);",
                           "expect(find.text('Sign in'), findsWidgets);")
           src=src.replace("await tester.ensureVisible(find.widgetWithText(FilledButton, 'Sign in'));",
                           "await tester.scrollUntilVisible(find.widgetWithText(FilledButton, 'Sign in'), 210.0);")
-          # Collapse Python string backslash escapes into Dart newlines for the mock store.
-          src=src.replace('\\\\n', '\\n')
           p.write_text(src)
           service=Path('/tmp/lumenlink-build/lib/core/account_client.dart')
           text=service.read_text().replace('      return restore();', '      return await restore();')
